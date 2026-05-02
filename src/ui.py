@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 from pathlib import Path
 
 import pandas as pd
@@ -8,6 +9,19 @@ import streamlit as st
 
 
 PREVIEW_OPTIONS = [20, 50, 100, 300, 500, 1000, "All"]
+
+def _hash_dataframe_for_cache(df: pd.DataFrame) -> str:
+    if df is None:
+        return "<none>"
+
+    safe_df = df
+    object_cols = safe_df.select_dtypes(include=["object"]).columns
+    if len(object_cols) > 0:
+        safe_df = safe_df.copy()
+        safe_df[object_cols] = safe_df[object_cols].astype(str)
+
+    hashed = pd.util.hash_pandas_object(safe_df, index=True).to_numpy(copy=False)
+    return hashlib.sha256(hashed.tobytes()).hexdigest()
 
 
 def app_css() -> str:
@@ -624,7 +638,7 @@ def preview_dataframe(
     st.caption(f"Showing {preview_df.shape[0]:,} rows and {preview_df.shape[1]:,} of {df.shape[1]:,} columns.")
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, hash_funcs={pd.DataFrame: _hash_dataframe_for_cache})
 def convert_df_to_csv(df: pd.DataFrame) -> bytes:
     return df.to_csv(index=False).encode("utf-8")
 
