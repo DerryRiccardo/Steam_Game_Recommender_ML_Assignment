@@ -1,4 +1,4 @@
-import streamlit as st
+﻿import streamlit as st
 
 from src.config import DEFAULT_FEATURES, DEFAULT_WEIGHTS
 from src.data_loader import active_preprocessing_key, load_prepared_games
@@ -10,17 +10,10 @@ from src.ui import game_card, page_setup, require_data
 page_setup("Game Recommender")
 st.title("Game Recommender")
 
-df = load_prepared_games()
-if not require_data(df):
-    st.stop()
-data_key = active_preprocessing_key()
-
 selected_features = st.session_state.get("selected_features", DEFAULT_FEATURES)
 score_weights = normalize_weights(st.session_state.get("score_weights", DEFAULT_WEIGHTS))
-feature_key = tuple(sorted(selected_features.items()))
-_, matrix = build_vector_model(df, feature_key, data_key)
-
 enabled_features = [feature.replace("_", " ").title() for feature, enabled in selected_features.items() if enabled]
+
 with st.expander("Active recommender settings", expanded=False):
     st.write("Content fields: " + ", ".join(enabled_features))
     st.write(
@@ -31,6 +24,26 @@ with st.expander("Active recommender settings", expanded=False):
         f"recency {score_weights['recency']:.0%}."
     )
     st.caption("Change these on the Build Recommender page.")
+
+model_ready = st.session_state.get("recommender_model_ready", False)
+model_notice = st.empty()
+if not model_ready:
+    model_notice.info(
+        "No recommender model has been built in this session yet. You can build it first on the Build Recommender page, "
+        "or continue here and the model will be built after you click Recommend Games."
+    )
+
+if not st.session_state.get("recommendation_data_loaded", False):
+    if st.button("Load Recommendation Data", type="primary", width="stretch"):
+        st.session_state["recommendation_data_loaded"] = True
+        st.rerun()
+    st.stop()
+
+with st.spinner("Loading prepared games..."):
+    df = load_prepared_games()
+if not require_data(df):
+    st.stop()
+data_key = active_preprocessing_key()
 
 st.sidebar.header("Recommendation Filters")
 all_genres = sorted({genre for genres in df["genres_list"] for genre in genres})
@@ -76,14 +89,20 @@ st.subheader("Selected Game")
 game_card(selected_row)
 
 if st.button("Recommend Games", type="primary", width="stretch"):
-    recommendations = recommend_games(
-        df=df,
-        candidate_df=candidate_df,
-        selected_game=game_name,
-        matrix=matrix,
-        weights=score_weights,
-        top_n=top_n,
-    )
+    with st.spinner("Building model and finding similar games..."):
+        feature_key = tuple(sorted(selected_features.items()))
+        _, matrix = build_vector_model(df, feature_key, data_key)
+        st.session_state["recommender_model_ready"] = True
+        st.session_state["recommender_model_key"] = (feature_key, data_key)
+        model_notice.empty()
+        recommendations = recommend_games(
+            df=df,
+            candidate_df=candidate_df,
+            selected_game=game_name,
+            matrix=matrix,
+            weights=score_weights,
+            top_n=top_n,
+        )
 
     if recommendations.empty:
         st.warning("No recommendations found. Try relaxing the filters.")
@@ -92,3 +111,7 @@ if st.button("Recommend Games", type="primary", width="stretch"):
     st.subheader(f"Because you liked {game_name}")
     for _, row in recommendations.iterrows():
         game_card(row)
+else:
+    st.caption("The TF-IDF recommender model will be built after you click Recommend Games.")
+
+

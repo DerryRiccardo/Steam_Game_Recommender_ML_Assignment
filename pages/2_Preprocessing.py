@@ -1,4 +1,4 @@
-import pandas as pd
+﻿import pandas as pd
 import streamlit as st
 
 from src.config import PROCESSED_PARQUET
@@ -93,12 +93,13 @@ with st.form("preprocessing_form"):
         help="A game is kept if it supports at least one selected platform.",
     )
 
-    apply_clicked = st.form_submit_button("Apply Preprocessing", type="primary")
+    apply_clicked = st.form_submit_button("Apply & Run Preprocessing", type="primary")
     reset_clicked = st.form_submit_button("Reset to Defaults")
 
 if reset_clicked:
     save_active_preprocessing_options(default_preprocessing_options(raw_df))
-    st.success("Preprocessing options reset to defaults. Reloading with default settings.")
+    st.session_state["preprocessing_has_run"] = False
+    st.success("Preprocessing options reset to defaults. Click Apply & Run Preprocessing when ready.")
     st.rerun()
 
 if apply_clicked:
@@ -118,15 +119,75 @@ if apply_clicked:
             "tag_limit": tag_limit,
         }
     )
-    st.success("Preprocessing options applied. Build/Recommender pages will use this processed dataset.")
+    st.session_state["preprocessing_has_run"] = True
+    st.success("Preprocessing applied. Build/Recommender pages will use this processed dataset.")
     st.rerun()
+
+st.subheader("Preprocessing Steps")
+st.markdown(
+    """
+    - Removed adult/sexual-content games by default.
+    - Converted `release_date` into `release_year`.
+    - Created `is_free` from the price column.
+    - Parsed `genres`, `categories`, `developers`, `publishers`, and weighted Steam `tags`.
+    - Created `total_reviews` and `rating_percent`.
+    - Converted estimated owner ranges into numeric midpoint values.
+    - Applied the user-selected duplicate, missing-description, review, rating, year, platform, price, and tag-limit options.
+    - Applied MinMaxScaler to numeric fields used in the recommendation score.
+    """
+)
+
+active_settings = normalize_preprocessing_options(st.session_state.get("preprocessing_options"), raw_df)
+with st.expander("Active preprocessing settings", expanded=False):
+    st.json(active_settings)
+
+if PROCESSED_PARQUET.exists():
+    st.info(
+        f"Default processed cache exists: `{PROCESSED_PARQUET.name}`. "
+        "Opening this page does not load it automatically; it is used only after you apply preprocessing or request recommendations."
+    )
+
+if st.button("Clear Prepared Data Cache", type="primary"):
+    clear_prepared_cache()
+    st.session_state["preprocessing_has_run"] = False
+    st.success("Prepared cache cleared. Click Apply & Run Preprocessing to rebuild it.")
+    st.rerun()
+
+if not st.session_state.get("preprocessing_has_run", False):
+    st.stop()
 
 base_df = load_base_clean_games()
 df = load_prepared_games()
-active_settings = normalize_preprocessing_options(st.session_state.get("preprocessing_options"), raw_df)
 mature_removed = len(raw_df) - len(base_df)
 duplicates_removed = len(raw_df) - len(raw_df.drop_duplicates(subset=["appid"]).drop_duplicates(subset=["name"]))
 total_removed = len(raw_df) - len(df)
+
+st.subheader("Current Preprocessing Summary")
+metric_row(
+    [
+        ("Raw Rows", f"{len(raw_df):,}"),
+        ("Prepared Rows", f"{len(df):,}"),
+        ("Rows Removed", f"{total_removed:,}"),
+        ("Mature Content Removed", f"{mature_removed:,}"),
+    ]
+)
+st.caption(f"Duplicate rows detected in raw data: {duplicates_removed:,}.")
+
+st.subheader("Preprocessed Data Preview")
+preview_columns = [
+    "appid",
+    "name",
+    "release_year",
+    "price",
+    "is_free",
+    "genres_list",
+    "tags_list",
+    "rating_percent",
+    "total_reviews",
+    "owner_midpoint",
+]
+preview_dataframe(df, columns=preview_columns, key="preprocessed_preview_rows")
+download_dataframe(df, "preprocessed_steam_games.csv", "Download full preprocessed data")
 
 st.subheader("Scaled Numeric Features")
 scaled_columns = [
@@ -147,57 +208,3 @@ st.caption(
     "MinMaxScaler converts each numeric feature into a 0-1 range, so large values like review counts "
     "do not overpower smaller values like rating percentage."
 )
-
-st.subheader("Current Preprocessing Summary")
-metric_row(
-    [
-        ("Raw Rows", f"{len(raw_df):,}"),
-        ("Prepared Rows", f"{len(df):,}"),
-        ("Rows Removed", f"{total_removed:,}"),
-        ("Mature Content Removed", f"{mature_removed:,}"),
-    ]
-)
-
-with st.expander("Active preprocessing settings", expanded=False):
-    st.json(active_settings)
-st.caption(f"Duplicate rows detected in raw data: {duplicates_removed:,}.")
-
-st.subheader("Preprocessed Data Preview")
-preview_columns = [
-    "appid",
-    "name",
-    "release_year",
-    "price",
-    "is_free",
-    "genres_list",
-    "tags_list",
-    "rating_percent",
-    "total_reviews",
-    "owner_midpoint",
-]
-preview_dataframe(df, columns=preview_columns, key="preprocessed_preview_rows")
-download_dataframe(df, "preprocessed_steam_games.csv", "Download full preprocessed data")
-
-st.subheader("Preprocessing Steps")
-st.markdown(
-    """
-    - Removed adult/sexual-content games by default.
-    - Converted `release_date` into `release_year`.
-    - Created `is_free` from the price column.
-    - Parsed `genres`, `categories`, `developers`, `publishers`, and weighted Steam `tags`.
-    - Created `total_reviews` and `rating_percent`.
-    - Converted estimated owner ranges into numeric midpoint values.
-    - Applied the user-selected duplicate, missing-description, review, rating, year, platform, price, and tag-limit options.
-    - Applied MinMaxScaler to numeric fields used in the recommendation score.
-    """
-)
-
-if PROCESSED_PARQUET.exists():
-    st.info(
-        f"Default processed cache exists: `{PROCESSED_PARQUET.name}`. "
-        "Custom preprocessing choices are cached in memory during the Streamlit session."
-    )
-
-if st.button("Clear Prepared Data Cache", type="primary"):
-    clear_prepared_cache()
-    st.success("Prepared cache cleared. Reload the page to rebuild it.")

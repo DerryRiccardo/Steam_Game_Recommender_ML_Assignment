@@ -1,4 +1,4 @@
-import pandas as pd
+﻿import pandas as pd
 import plotly.express as px
 import streamlit as st
 
@@ -75,6 +75,52 @@ with right:
     dtypes = raw_df.dtypes.astype(str).reset_index()
     dtypes.columns = ["column", "data_type"]
     st.dataframe(dtypes, width="stretch")
+st.subheader("Column Meanings")
+st.markdown(
+    """
+    **Basic game information**
+    - `appid`: Steam's unique ID for each game.
+    - `name`: Game title.
+    - `release_date`: Date the game was released on Steam.
+    - `required_age`: Minimum listed age requirement. `0` usually means no specific age gate.
+    - `price`: Current listed price. `0` means free to play.
+    - `dlc_count`: Number of downloadable content items linked to the game.
+    - `discount`: Current discount percentage.
+
+    **Text and media**
+    - `short_description`: Short Steam store summary. This is useful for content similarity.
+    - `header_image`: Steam header image URL used in game cards.
+
+    **Platform support**
+    - `windows`, `mac`, `linux`: Whether the game supports each platform.
+
+    **Reviews and scores**
+    - `positive`: Number of positive Steam user reviews.
+    - `negative`: Number of negative Steam user reviews.
+    - `pct_pos_total`: Overall positive review percentage. Example: `86` means 86% of all reviews are positive.
+    - `num_reviews_total`: Total review count used for `pct_pos_total`.
+    - `pct_pos_recent`: Recent positive review percentage. `-1` usually means recent review data is missing.
+    - `num_reviews_recent`: Number of recent reviews used for `pct_pos_recent`. `-1` usually means missing recent review data.
+    - `metacritic_score`: Metacritic score if available. This is separate from Steam user reviews.
+    - `recommendations`: Steam recommendation count from the dataset.
+    - `total_reviews_raw`: EDA helper column made by adding `positive + negative`.
+
+    **Popularity and playtime**
+    - `estimated_owners`: Estimated owner range, such as `500000 - 1000000`.
+    - `peak_ccu`: Peak concurrent users, a signal of active popularity.
+    - `average_playtime_forever`: Average total playtime, usually in minutes.
+    - `median_playtime_forever`: Median total playtime, usually in minutes.
+
+    **Content features for recommendation**
+    - `genres`: Broad Steam genres, such as Action, RPG, Strategy, or Simulation.
+    - `tags`: Community Steam tags, often more specific than genres.
+    - `categories`: Steam feature labels, such as Single-player, Multi-player, Co-op, or Steam Achievements.
+    - `developers`: Game developer or studio.
+    - `publishers`: Game publisher.
+    """
+)
+
+
 
 
 @st.cache_data(show_spinner=False)
@@ -302,4 +348,6 @@ with tab_platforms:
     price_counts = raw_df["price"].eq(0).map({True: "Free", False: "Paid"}).value_counts().reset_index()
     price_counts.columns = ["type", "games"]
     st.plotly_chart(px.pie(price_counts, names="type", values="games", title="Sample Free vs Paid Games"), width="stretch")
+
+
 
