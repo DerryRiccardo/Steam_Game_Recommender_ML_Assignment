@@ -1,6 +1,8 @@
+﻿import json
+
 import streamlit as st
 
-from src.config import ROOT_DIR
+from src.config import DATASET_META, DATASET_SOURCE_URL, ROOT_DIR
 from src.ui import home_banner, page_setup
 
 
@@ -20,8 +22,44 @@ st.markdown(
     This application introduces a content-based recommendation system for Steam games.
     Instead of asking users to rate many games first, the app starts from one selected game
     and searches for other games with similar metadata. The project is organized as a simple
-    machine learning workflow: explore the raw dataset, clean and prepare the data, build
+    machine learning workflow: explore the review-filtered sample, clean and prepare the data, build
     the recommender model, then generate recommendations with readable match explanations.
+    """
+)
+
+st.divider()
+
+
+st.subheader("Dataset Used")
+
+if DATASET_META.exists():
+    dataset_meta = json.loads(DATASET_META.read_text(encoding="utf-8"))
+else:
+    dataset_meta = {
+        "original_rows": "Unknown",
+        "sample_rows": "Unknown",
+        "review_threshold": 1000,
+    }
+
+st.markdown(
+    f"""
+    **Steam Games Dataset 2025**  
+    Source: [Kaggle]({DATASET_SOURCE_URL})  
+    Original dataset rows: **{int(dataset_meta["original_rows"]):,} games**  
+    Sample used in this app: **{int(dataset_meta["sample_rows"]):,} games** with more than **{int(dataset_meta["review_threshold"]):,} reviews**
+
+    The original Steam dataset is large, so this deployed app uses a smaller review-filtered
+    sample to improve Streamlit loading speed and reduce the chance of memory/time issues.
+    """
+)
+
+st.subheader("Group 6")
+st.markdown(
+    """
+    - Akira Agha Nugroho - 2802403555
+    - Daniel Setiawan - 2802412471
+    - Darrell Richie Wibawa - 2802409533
+    - Derry Riccardo - 2802399513
     """
 )
 
@@ -33,7 +71,7 @@ st.markdown(
     """
     **1. Exploratory Data Analysis**
 
-    The Raw Data EDA page is used to understand the original Steam dataset before any
+    The Raw Data EDA page is used to understand the review-filtered Steam sample before any
     cleaning is applied. It shows dataset size, missing values, data types, release trends,
     genre and tag distributions, review patterns, platform support, price distribution, and
     an explorer for inspecting any raw column. This step helps identify data quality issues
@@ -103,3 +141,4 @@ st.markdown(
     famous games overpower smaller but more relevant games.
     """
 )
+

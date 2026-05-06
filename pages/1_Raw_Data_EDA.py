@@ -19,7 +19,7 @@ LIST_LIKE_COLUMNS = {
 page_setup("Exploratory Data Analysis")
 st.title("Exploratory Data Analysis")
 st.caption(
-    "This page explores the original Steam dataset before preprocessing. The goal is to understand "
+    "This page explores the review-filtered Steam dataset sample used by the app before preprocessing. The goal is to understand "
     "data quality, feature completeness, review coverage, and distribution patterns that will affect "
     "the preprocessing choices and the recommender model."
 )
@@ -238,7 +238,7 @@ with tab_release:
         .reset_index(name="games")
     )
     st.plotly_chart(
-        px.line(release_counts, x="release_year", y="games", markers=True, title="Data Games Released Per Year"),
+        px.line(release_counts, x="release_year", y="games", markers=True, title="Sample Games Released Per Year"),
         width="stretch",
     )
 
@@ -249,14 +249,14 @@ with tab_genres:
     genre_counts = raw_df["genres"].apply(parse_list_text).explode().dropna().value_counts().head(20).reset_index()
     genre_counts.columns = ["genre", "games"]
     st.plotly_chart(
-        px.bar(genre_counts, x="games", y="genre", orientation="h", title="Top Data Genres"),
+        px.bar(genre_counts, x="games", y="genre", orientation="h", title="Top Sample Genres"),
         width="stretch",
     )
 
     tag_counts = raw_df["tags"].apply(lambda value: parse_tags(value, limit=10)).explode().dropna().value_counts().head(20).reset_index()
     tag_counts.columns = ["tag", "games"]
     st.plotly_chart(
-        px.bar(tag_counts, x="games", y="tag", orientation="h", title="Top Data Steam Tags"),
+        px.bar(tag_counts, x="games", y="tag", orientation="h", title="Top Sample Steam Tags"),
         width="stretch",
     )
 
@@ -279,12 +279,12 @@ with tab_reviews:
         * 100
     )
     st.plotly_chart(
-        px.histogram(reviewed, x="rating_percent_raw", nbins=40, title="Data Review Score Distribution"),
+        px.histogram(reviewed, x="rating_percent_raw", nbins=40, title="Sample Review Score Distribution"),
         width="stretch",
     )
     top_reviewed = raw_df.sort_values("total_reviews_raw", ascending=False).head(15)
     st.plotly_chart(
-        px.bar(top_reviewed, x="total_reviews_raw", y="name", orientation="h", title="Most Reviewed Data Games"),
+        px.bar(top_reviewed, x="total_reviews_raw", y="name", orientation="h", title="Most Reviewed Sample Games"),
         width="stretch",
     )
 
@@ -295,11 +295,11 @@ with tab_platforms:
         "Linux": int(raw_df["linux"].sum()),
     }
     st.plotly_chart(
-        px.bar(x=list(platform_counts.keys()), y=list(platform_counts.values()), title="Data Platform Support"),
+        px.bar(x=list(platform_counts.keys()), y=list(platform_counts.values()), title="Sample Platform Support"),
         width="stretch",
     )
 
     price_counts = raw_df["price"].eq(0).map({True: "Free", False: "Paid"}).value_counts().reset_index()
     price_counts.columns = ["type", "games"]
-    st.plotly_chart(px.pie(price_counts, names="type", values="games", title="Data Free vs Paid Games"), width="stretch")
+    st.plotly_chart(px.pie(price_counts, names="type", values="games", title="Sample Free vs Paid Games"), width="stretch")
 

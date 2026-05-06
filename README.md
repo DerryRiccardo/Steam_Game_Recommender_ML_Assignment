@@ -1,19 +1,19 @@
-# Steam Game Recommender
+﻿# Steam Game Recommender
 
-A Streamlit game recommender system using a recent Steam games dataset.
+A Streamlit game recommender system using a review-filtered sample of a recent Steam games dataset.
 
 The app recommends games with a content-based approach using genres, Steam tags, categories, descriptions, and optional metadata such as developer and publisher. It also adds a match score using rating, popularity, and release recency signals.
 
 ## Pages
 
 1. **Home**  
-   Project overview, dataset summary, and workflow.
+   Project overview, dataset summary, group members, workflow, and recommendation method.
 
-2. **Dataset & Preprocessing**  
-   Shows raw/prepared data, cleaning steps, parsed fields, review features, and MinMaxScaler outputs.
+2. **Exploratory Data Analysis**  
+   Explores the review-filtered raw sample, data quality, feature readiness, distributions, and any selected column.
 
-3. **EDA / Insights**  
-   Visualizes release trends, top genres/tags, review distribution, popular games, platforms, and free vs paid games.
+3. **Preprocessing**  
+   Shows cleaning options, prepared data, parsed fields, review features, and MinMaxScaler outputs.
 
 4. **Build Recommender**  
    Lets users choose the features and weights used by the recommender.
@@ -23,44 +23,25 @@ The app recommends games with a content-based approach using genres, Steam tags,
 
 ## Dataset
 
-Use the Kaggle dataset:
+Source dataset:
 
 [Steam Games Dataset 2025 by Artemiy Ermilov](https://www.kaggle.com/datasets/artermiloff/steam-games-dataset)
 
-Recommended file:
+The original dataset has 89,618 games. The full CSV is too slow and heavy for a Streamlit deployment workflow, so this project intentionally uses a smaller review-filtered sample:
 
 ```text
-games_march2025_cleaned.csv
+data/games_march2025_1000_reviews.csv
 ```
 
-Place it here:
+The sample contains 6,295 games with more than 1,000 reviews. This keeps the app responsive while preserving enough popular, review-rich games for meaningful EDA and recommendations.
+
+The full Kaggle file can stay local for regeneration or experimentation:
 
 ```text
 data/games_march2025_cleaned.csv
 ```
 
-Alternatively, place the downloaded zip here:
-
-```text
-data/archive (2).zip
-```
-
-You can also point the app to a local CSV/ZIP without copying it:
-
-```bash
-set STEAM_DATA_PATH=C:\path\to\archive (2).zip
-streamlit run app.py
-```
-
-Another local-only option is to create:
-
-```text
-data/local_data_path.txt
-```
-
-and put the full path to your CSV/ZIP inside it. This file is ignored by Git.
-
-The large dataset files are ignored by GitHub through `.gitignore`.
+The app does not use the full CSV by default. `src/config.py` points to the sampled CSV.
 
 ## Setup
 
@@ -87,12 +68,13 @@ streamlit run app.py
 
 The app:
 
-1. Cleans and prepares the dataset.
-2. Combines selected metadata fields into a text feature.
-3. Converts game text into TF-IDF vectors.
-4. Computes cosine similarity for the selected game.
-5. Adds genre/tag/category overlap so recommendations stay closer to the selected game's actual taste profile.
-6. Blends content similarity with normalized numeric signals:
+1. Loads the review-filtered Steam sample.
+2. Cleans and prepares the dataset.
+3. Combines selected metadata fields into a text feature.
+4. Converts game text into TF-IDF vectors.
+5. Computes cosine similarity for the selected game.
+6. Adds genre/tag/category overlap so recommendations stay closer to the selected game's actual taste profile.
+7. Blends content similarity with normalized numeric signals:
    - rating score
    - popularity score
    - recency score
@@ -113,7 +95,7 @@ Processed parquet caches are paired with metadata files so stale caches are rebu
 
 ## Preprocessing
 
-Before the recommender is built, the raw Steam dataset is cleaned and transformed so it is ready for modeling. The main preprocessing steps are:
+Before the recommender is built, the raw sample is cleaned and transformed so it is ready for modeling. The main preprocessing steps are:
 
 - **Remove duplicates**  
   Duplicate rows are removed based on repeated `appid` and repeated game `name`, so one game does not appear multiple times and bias the recommendation results.
@@ -157,11 +139,7 @@ The recommender uses a content-based ranking pipeline. The main methods are:
   In addition to cosine similarity, the system measures explicit overlap in genres, tags, and categories. This helps keep recommendations closer to the selected game's actual taste profile.
 
 - **Weighted ranking for final recommendation**  
-  The final recommendation score is not based only on similarity. It combines:
-  - content similarity
-  - rating score
-  - popularity score
-  - recency score
+  The final recommendation score combines content similarity, rating score, popularity score, and recency score.
 
 The model also adds small adjustments from:
 
@@ -171,8 +149,6 @@ The model also adds small adjustments from:
 This makes the final ranking more realistic, because a game should not only be similar in content, but also reasonably good, relevant, and playable on similar platforms.
 
 ### Scoring Summary
-
-The ranking logic can be summarized like this:
 
 ```text
 content_signal =
@@ -203,8 +179,9 @@ With the default configuration, the recommender gives the largest weight to **co
 
 ## Notes For Collaborators
 
-- Do not commit the dataset CSV/ZIP files.
+- Commit the review-filtered sample CSV and `dataset_sample_meta.json` for deployment.
+- Do not commit the full Kaggle CSV, generated parquet caches, or local path files.
 - Keep new shared logic inside `src/`.
-- Keep Streamlit page-specific UI inside `app.py` or `pages/`.
+- Keep Streamlit page-specific UI inside `Home.py` or `pages/`.
 - If recommendation performance becomes slow, reduce `max_features` in `src/recommender.py`.
 - Run checks with `pytest -q`.

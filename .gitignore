@@ -8,8 +8,8 @@ env/
 
 # Large local datasets
 data/*.csv
-data/games_march2025_cleaned.csv.gz
-!data/games_march2025_cleaned.csv
+!data/games_march2025_1000_reviews.csv
+!data/dataset_sample_meta.json
 data/*.zip
 data/*.parquet
 data/*.meta.json

@@ -70,16 +70,16 @@ def available_data_source() -> tuple[str, Path | None]:
             return "csv", env_path
         if env_path.exists() and env_path.suffix.lower() == ".zip":
             return "zip", env_path
+    if PRIMARY_CSV.exists():
+        return "csv", PRIMARY_CSV
+    if PRIMARY_ZIP.exists():
+        return "zip", PRIMARY_ZIP
     if LOCAL_DATA_PATH_FILE.exists():
         local_path = Path(LOCAL_DATA_PATH_FILE.read_text(encoding="utf-8").strip())
         if local_path.exists() and local_path.suffix.lower() == ".csv":
             return "csv", local_path
         if local_path.exists() and local_path.suffix.lower() == ".zip":
             return "zip", local_path
-    if PRIMARY_CSV.exists():
-        return "csv", PRIMARY_CSV
-    if PRIMARY_ZIP.exists():
-        return "zip", PRIMARY_ZIP
     return "missing", None
 
 
@@ -292,7 +292,7 @@ def clear_prepared_cache() -> None:
 
 def data_help_message() -> str:
     return (
-        "Place `games_march2025_cleaned.csv` inside the `data/` folder. "
+        "Place `games_march2025_1000_reviews.csv` inside the `data/` folder. "
         "Alternatively, place the Kaggle zip as `data/archive (2).zip`; the app will read "
         "`games_march2025_cleaned.csv` from inside it."
     )

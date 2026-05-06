@@ -106,7 +106,7 @@ def default_preprocessing_options(df: pd.DataFrame | None = None) -> dict:
     return {
         "remove_duplicates": True,
         "missing_descriptions": "Keep as empty",
-        "min_reviews": 0,
+        "min_reviews": 1000,
         "min_rating": 0,
         "year_range": year_range,
         "platforms": ("windows", "mac", "linux"),

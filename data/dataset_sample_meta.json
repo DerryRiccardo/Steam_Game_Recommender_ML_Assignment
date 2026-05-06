@@ -1,0 +1,8 @@
+{
+  "source": "Kaggle Steam Games Dataset 2025 by Artemiy Ermilov",
+  "source_url": "https://www.kaggle.com/datasets/artermiloff/steam-games-dataset",
+  "review_threshold": 1000,
+  "original_rows": 89618,
+  "sample_rows": 6295,
+  "removed_rows": 83323
+}
